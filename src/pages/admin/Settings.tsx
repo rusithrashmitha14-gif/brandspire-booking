@@ -209,14 +209,14 @@ export default function Settings() {
         <CardContent>
           <div className="bg-muted p-4 rounded-md relative group">
             <pre className="text-sm overflow-x-auto whitespace-pre-wrap font-mono text-muted-foreground">
-              {`<iframe src="${window.location.origin}/embed/${property?.slug || property?.id}" width="100%" height="900px" style="border:none;" />`}
+              {`<iframe src="${window.location.origin}/embed/${property?.slug || property?.id}" width="100%" height="900px" style="border:none;">${String.fromCharCode(60, 47, 105, 102, 114, 97, 109, 101, 62)}`}
             </pre>
             <Button 
               variant="secondary" 
               size="sm" 
               className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
               onClick={() => {
-                const code = `<iframe src="${window.location.origin}/embed/${property?.slug || property?.id}" width="100%" height="900px" style="border:none;" />`;
+                const code = `<iframe src="${window.location.origin}/embed/${property?.slug || property?.id}" width="100%" height="900px" style="border:none;">${String.fromCharCode(60, 47, 105, 102, 114, 97, 109, 101, 62)}`;
                 navigator.clipboard.writeText(code);
                 alert("Copied to clipboard!");
               }}
