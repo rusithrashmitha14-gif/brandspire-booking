@@ -3,23 +3,25 @@ import { useDropzone } from 'react-dropzone';
 import { UploadCloud, Image as ImageIcon, Trash2, Copy, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { useGalleryImages, useUploadImage, getImageUrl } from '@/hooks/useSupabase';
+import { useGalleryImages, useUploadImage, getImageUrl, useProperty } from '@/hooks/useSupabase';
 
 export default function Gallery() {
-  const { data: images = [], isLoading } = useGalleryImages();
+  const { data: property } = useProperty();
+  const { data: images = [], isLoading } = useGalleryImages(property?.id);
   const { mutateAsync: uploadImage, isPending: isUploading } = useUploadImage();
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
+    if (!property?.id) return;
     for (const file of acceptedFiles) {
       try {
-        await uploadImage(file);
+        await uploadImage({ file, propertyId: property.id });
       } catch (err) {
         console.error("Failed to upload image:", err);
         alert(`Failed to upload ${file.name}`);
       }
     }
-  }, [uploadImage]);
+  }, [uploadImage, property?.id]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({ 
     onDrop,

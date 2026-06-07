@@ -475,14 +475,15 @@ export function useCalendarData(propertyId?: string, startDate?: string, endDate
 }
 
 // Fetch all uploaded images from Supabase Storage
-export function useGalleryImages() {
+export function useGalleryImages(propertyId?: string) {
   return useQuery({
-    queryKey: ['gallery_images'],
+    queryKey: ['gallery_images', propertyId],
     queryFn: async () => {
+      if (!propertyId) return [];
       const { data, error } = await supabase
         .storage
         .from('property_images')
-        .list('', {
+        .list(propertyId, {
           limit: 100,
           offset: 0,
           sortBy: { column: 'created_at', order: 'desc' },
@@ -491,13 +492,19 @@ export function useGalleryImages() {
       if (error) throw error;
       
       // Filter out hidden files like .emptyFolderPlaceholder
-      return data.filter(file => !file.name.startsWith('.'));
-    }
+      // And prefix with propertyId so getImageUrl works if it needs full path
+      return data.filter(file => !file.name.startsWith('.')).map(f => ({
+        ...f,
+        name: `${propertyId}/${f.name}`
+      }));
+    },
+    enabled: !!propertyId
   });
 }
 
 // Get public URL for an image
 export function getImageUrl(path: string) {
+  if (!path) return '';
   const { data } = supabase.storage.from('property_images').getPublicUrl(path);
   return data.publicUrl;
 }
@@ -506,11 +513,11 @@ export function getImageUrl(path: string) {
 export function useUploadImage() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (file: File) => {
+    mutationFn: async ({ file, propertyId }: { file: File, propertyId: string }) => {
       // Create a unique filename
       const fileExt = file.name.split('.').pop();
       const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
-      const filePath = `${fileName}`;
+      const filePath = `${propertyId}/${fileName}`;
 
       const { error } = await supabase.storage
         .from('property_images')
@@ -519,8 +526,8 @@ export function useUploadImage() {
       if (error) throw error;
       return filePath;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['gallery_images'] });
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['gallery_images', variables.propertyId] });
     }
   });
 }
