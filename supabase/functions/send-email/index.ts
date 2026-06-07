@@ -180,6 +180,54 @@ Deno.serve(async (req) => {
       html: emailHTML,
     });
 
+    // Send WhatsApp notification via Twilio if it's a new booking
+    if (type === "INSERT" && hotelPhone) {
+      const twilioAccountSid = Deno.env.get("TWILIO_ACCOUNT_SID");
+      const twilioAuthToken = Deno.env.get("TWILIO_AUTH_TOKEN");
+      const twilioNumber = Deno.env.get("TWILIO_WHATSAPP_NUMBER");
+
+      if (twilioAccountSid && twilioAuthToken && twilioNumber) {
+        // Format the owner's phone number to E.164 (+1234567890)
+        let ownerNumber = hotelPhone.replace(/[^0-9+]/g, '');
+        if (!ownerNumber.startsWith('+')) {
+          // Default to US country code if no + is provided, or you can adjust this logic based on your region
+          ownerNumber = '+' + ownerNumber;
+        }
+
+        const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${twilioAccountSid}/Messages.json`;
+        
+        const messageBody = `🚨 *New Booking Alert!*\n\n${guest_name} has requested a reservation at ${hotelName}.\n\n📅 Dates: ${new Date(check_in).toLocaleDateString()} to ${new Date(check_out).toLocaleDateString()}\n🛏️ Rooms:\n${roomsListHtml.replace(/<[^>]*>?/gm, '').trim()}\n💰 Total: $${totalAmount}\n\nLog in to confirm: https://yourwebsite.com/admin/bookings`;
+
+        const twilioBody = new URLSearchParams({
+          From: `whatsapp:${twilioNumber.replace('whatsapp:', '')}`, // Ensure format is whatsapp:+...
+          To: `whatsapp:${ownerNumber}`,
+          Body: messageBody
+        });
+
+        const twilioHeaders = {
+          'Authorization': `Basic ${btoa(`${twilioAccountSid}:${twilioAuthToken}`)}`,
+          'Content-Type': 'application/x-www-form-urlencoded'
+        };
+
+        try {
+          const twilioResponse = await fetch(twilioUrl, {
+            method: 'POST',
+            headers: twilioHeaders,
+            body: twilioBody.toString()
+          });
+          
+          if (!twilioResponse.ok) {
+            const errBody = await twilioResponse.text();
+            console.error("Twilio Error:", errBody);
+          }
+        } catch (twErr) {
+          console.error("Failed to send WhatsApp message:", twErr);
+        }
+      } else {
+        console.warn("Twilio credentials not found in environment variables. Skipping WhatsApp notification.");
+      }
+    }
+
     return new Response(JSON.stringify(data), {
       headers: { "Content-Type": "application/json" },
       status: 200,
