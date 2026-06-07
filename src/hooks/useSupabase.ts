@@ -54,12 +54,16 @@ export function useEnsureProperty() {
       const { data: existing } = await supabase.from('properties').select('id').limit(1).single();
       if (existing) return existing;
 
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user) throw new Error("Not authenticated");
+
       const { data, error } = await supabase
         .from('properties')
         .insert([{
-          name: 'Seasons Villa',
-          slug: 'seasons-villa',
-          description: 'A beautiful luxury villa.',
+          user_id: user.user.id,
+          name: 'My Property',
+          slug: `property-${Math.random().toString(36).substring(7)}`,
+          description: 'A beautiful luxury property.',
         }])
         .select('id')
         .single();
@@ -74,18 +78,21 @@ export function useEnsureProperty() {
 }
 
 // Fetch all available amenities from the database
-export function useAmenities() {
+export function useAmenities(propertyId?: string) {
   return useQuery({
-    queryKey: ['amenities'],
+    queryKey: ['amenities', propertyId],
     queryFn: async () => {
+      if (!propertyId) return [];
       const { data, error } = await supabase
         .from('amenities')
         .select('*')
+        .eq('property_id', propertyId)
         .order('name', { ascending: true });
       
       if (error) throw error;
       return data;
     },
+    enabled: !!propertyId,
   });
 }
 
@@ -289,7 +296,7 @@ export function useDeleteRoomType() {
 export function useCreateAmenity() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (newAmenity: { name: string; icon?: string }) => {
+    mutationFn: async (newAmenity: { name: string; icon?: string; property_id: string }) => {
       const { data, error } = await supabase
         .from('amenities')
         .insert([newAmenity])
@@ -299,8 +306,8 @@ export function useCreateAmenity() {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['amenities'] });
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['amenities', variables.property_id] });
     }
   });
 }

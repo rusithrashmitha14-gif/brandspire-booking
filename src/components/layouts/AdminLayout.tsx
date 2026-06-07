@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Calendar, BedDouble, Users, Settings, Image as ImageIcon, LogOut, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useEnsureProperty } from '@/hooks/useSupabase';
 
 const navItems = [
   { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
@@ -15,6 +16,11 @@ const navItems = [
 
 export default function AdminLayout() {
   const location = useLocation();
+  const { mutate: ensureProperty } = useEnsureProperty();
+
+  useEffect(() => {
+    ensureProperty();
+  }, [ensureProperty]);
 
   return (
     <div className="flex h-screen bg-background">

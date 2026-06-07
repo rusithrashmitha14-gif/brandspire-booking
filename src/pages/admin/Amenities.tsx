@@ -31,7 +31,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { useAmenities, useCreateAmenity, useDeleteAmenity } from '@/hooks/useSupabase';
+import { useProperty, useAmenities, useCreateAmenity, useDeleteAmenity } from '@/hooks/useSupabase';
 
 const amenitySchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters.'),
@@ -43,7 +43,8 @@ type AmenityFormValues = z.infer<typeof amenitySchema>;
 export default function Amenities() {
   const [open, setOpen] = useState(false);
   
-  const { data: amenities = [], isLoading } = useAmenities();
+  const { data: property } = useProperty();
+  const { data: amenities = [], isLoading } = useAmenities(property?.id);
   const { mutateAsync: createAmenity, isPending } = useCreateAmenity();
   const { mutateAsync: deleteAmenity } = useDeleteAmenity();
 
@@ -56,8 +57,9 @@ export default function Amenities() {
   });
 
   async function onSubmit(data: AmenityFormValues) {
+    if (!property?.id) return;
     try {
-      await createAmenity(data);
+      await createAmenity({ ...data, property_id: property.id });
       setOpen(false);
       form.reset();
     } catch (error) {
