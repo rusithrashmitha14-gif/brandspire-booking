@@ -208,44 +208,50 @@ export default function EmbedWidget() {
                   <Button variant="outline" onClick={() => setStep('search')}>Try different dates</Button>
                 </div>
               ) : (
-                availableRooms.map((room: any) => (
-                  <div 
-                    key={room.room_type_id} 
-                    className="flex flex-col md:flex-row gap-6 p-4 rounded-xl border bg-card hover:border-primary/50 transition-colors shadow-sm cursor-pointer"
-                    onClick={() => { setViewingRoom(room); setActiveImage(room.featured_image || ''); }}
-                  >
-                    <div className="w-full md:w-1/3 aspect-video bg-muted rounded-lg overflow-hidden flex items-center justify-center text-muted-foreground relative">
-                      {room.featured_image ? <img src={room.featured_image} alt={room.title} className="w-full h-full object-cover" /> : <BedDouble className="w-10 h-10 opacity-20" />}
-                    </div>
-                    <div className="flex-1 flex flex-col justify-between py-1">
-                      <div>
-                        <h4 className="text-xl font-semibold mb-2">{room.title}</h4>
-                        <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{room.description || "A beautiful room ready for your stay."}</p>
+                availableRooms.map((room: any) => {
+                  const cartItem = cart.find(item => item.room.room_type_id === room.room_type_id);
+                  const isMaxReached = cartItem ? cartItem.quantity >= room.available_units : false;
+                  
+                  return (
+                    <div 
+                      key={room.room_type_id} 
+                      className="flex flex-col md:flex-row gap-6 p-4 rounded-xl border bg-card hover:border-primary/50 transition-colors shadow-sm cursor-pointer"
+                      onClick={() => { setViewingRoom(room); setActiveImage(room.featured_image || ''); }}
+                    >
+                      <div className="w-full md:w-1/3 aspect-video bg-muted rounded-lg overflow-hidden flex items-center justify-center text-muted-foreground relative">
+                        {room.featured_image ? <img src={room.featured_image} alt={room.title} className="w-full h-full object-cover" /> : <BedDouble className="w-10 h-10 opacity-20" />}
                       </div>
-                      <div className="flex justify-between items-end mt-4 pt-4 border-t">
+                      <div className="flex-1 flex flex-col justify-between py-1">
                         <div>
-                          <p className="text-xs text-muted-foreground uppercase tracking-wide font-semibold mb-1">Nightly Rate</p>
-                          <p className="text-2xl font-bold text-primary">${room.price}</p>
+                          <h4 className="text-xl font-semibold mb-2">{room.title}</h4>
+                          <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{room.description || "A beautiful room ready for your stay."}</p>
                         </div>
-                        <div className="flex items-center gap-3">
-                          <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); setViewingRoom(room); setActiveImage(room.featured_image || ''); }}>
-                            View Details
-                          </Button>
-                          {cart.find(item => item.room.room_type_id === room.room_type_id) ? (
-                            <div className="flex items-center border rounded-md" onClick={e => e.stopPropagation()}>
-                              <Button size="icon" variant="ghost" className="h-10 w-10" onClick={() => handleRemoveFromCart(room)}>-</Button>
-                              <span className="w-8 text-center font-semibold">{cart.find(item => item.room.room_type_id === room.room_type_id)?.quantity}</span>
-                              <Button size="icon" variant="ghost" className="h-10 w-10" onClick={() => handleAddToCart(room)} disabled={cart.find(item => item.room.room_type_id === room.room_type_id)?.quantity! >= room.available_units}>+</Button>
-                            </div>
-                          ) : (
-                            <Button size="lg" className="px-6" onClick={(e) => { e.stopPropagation(); handleAddToCart(room); }}>
-                              Select Room
+                        <div className="flex justify-between items-end mt-4 pt-4 border-t">
+                          <div>
+                            <p className="text-xs text-muted-foreground uppercase tracking-wide font-semibold mb-1">Nightly Rate</p>
+                            <p className="text-2xl font-bold text-primary">${room.price}</p>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); setViewingRoom(room); setActiveImage(room.featured_image || ''); }}>
+                              View Details
                             </Button>
-                          )}
+                            {cartItem ? (
+                              <div className="flex items-center border rounded-md" onClick={e => e.stopPropagation()}>
+                                <Button size="icon" variant="ghost" className="h-10 w-10" onClick={() => handleRemoveFromCart(room)}>-</Button>
+                                <span className="w-8 text-center font-semibold">{cartItem.quantity}</span>
+                                <Button size="icon" variant="ghost" className="h-10 w-10" onClick={() => handleAddToCart(room)} disabled={isMaxReached}>+</Button>
+                              </div>
+                            ) : (
+                              <Button size="lg" className="px-6" onClick={(e) => { e.stopPropagation(); handleAddToCart(room); }}>
+                                Select Room
+                              </Button>
+                            )}
+                          </div>
                         </div>
+                      </div>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
 
               {cart.length > 0 && (

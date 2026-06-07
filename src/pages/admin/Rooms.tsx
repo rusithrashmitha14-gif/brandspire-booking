@@ -367,7 +367,6 @@ export default function Rooms() {
                 {/* Amenities Selection Section */}
                 <div className="border-t pt-4">
                   <h4 className="text-base font-medium mb-1">Room Amenities</h4>
-                  <p className="text-[0.8rem] text-muted-foreground mb-4">
                   <FormField
                     control={form.control}
                     name="amenity_ids"
