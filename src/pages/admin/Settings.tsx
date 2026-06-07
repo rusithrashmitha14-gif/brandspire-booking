@@ -198,6 +198,42 @@ export default function Settings() {
           </Form>
         </CardContent>
       </Card>
+
+      <Card className="mt-8">
+          <CardHeader>
+            <CardTitle>Booking Widget Embed Code</CardTitle>
+            <CardDescription>
+              Copy and paste this code into your website's HTML to embed the public booking widget.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="bg-muted p-4 rounded-md relative group">
+              <pre className="text-sm overflow-x-auto whitespace-pre-wrap font-mono text-muted-foreground">
+{`<iframe 
+  src="${window.location.origin}/embed/${property?.slug || property?.id}" 
+  width="100%" 
+  height="900px" 
+  style="border:none;"
+></iframe>`}
+              </pre>
+              <Button 
+                variant="secondary" 
+                size="sm" 
+                className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                onClick={() => {
+                  navigator.clipboard.writeText(`<iframe src="${window.location.origin}/embed/${property?.slug || property?.id}" width="100%" height="900px" style="border:none;"></iframe>`);
+                  alert("Copied to clipboard!");
+                }}
+              >
+                Copy Code
+              </Button>
+            </div>
+            <p className="text-sm text-muted-foreground mt-4">
+              Note: We recommend setting the height to 800px-1000px depending on the amount of content you have.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
