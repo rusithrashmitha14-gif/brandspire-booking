@@ -57,7 +57,7 @@ export default function Rooms() {
   const { data: property, isLoading: isPropertyLoading } = useProperty();
   const { mutateAsync: ensureProperty } = useEnsureProperty();
   const { data: rooms = [], isLoading: isRoomsLoading } = useRoomTypes(property?.id);
-  const { data: amenities = [] } = useAmenities();
+  const { data: amenities = [] } = useAmenities(property?.id);
   
   const { mutateAsync: createRoomType, isPending: isCreating } = useCreateRoomType();
   const { mutateAsync: updateRoomType, isPending: isUpdating } = useUpdateRoomType();
