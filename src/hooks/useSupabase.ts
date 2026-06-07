@@ -6,9 +6,13 @@ export function useProperty() {
   return useQuery({
     queryKey: ['property'],
     queryFn: async () => {
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user) throw new Error("Not authenticated");
+
       const { data, error } = await supabase
         .from('properties')
         .select('*')
+        .eq('user_id', user.user.id)
         .limit(1)
         .single();
       
