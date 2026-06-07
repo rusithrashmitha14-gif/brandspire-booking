@@ -23,7 +23,25 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { guest_email, guest_name, check_in, check_out, booking_status, property_id } = record;
+    const { guest_email, guest_name, check_in, check_out, booking_status, property_id, booking_group_id } = record;
+
+    // Check if this is the primary booking for the group
+    if (booking_group_id) {
+      const { data: firstBooking } = await supabase
+        .from('bookings')
+        .select('id')
+        .eq('booking_group_id', booking_group_id)
+        .order('created_at', { ascending: true })
+        .limit(1)
+        .single();
+      
+      if (firstBooking?.id !== record.id) {
+        return new Response(JSON.stringify({ message: "Not the primary booking in group, skipping email." }), {
+          headers: { "Content-Type": "application/json" },
+          status: 200,
+        });
+      }
+    }
 
     // Fetch the Property details
     const { data: property } = await supabase
@@ -35,6 +53,37 @@ Deno.serve(async (req) => {
     const hotelName = property?.name || "Our Hotel";
     const hotelEmail = property?.email || "contact@ourhotel.com";
     const hotelPhone = property?.phone || "";
+
+    // Fetch all bookings in this group to calculate total and list rooms
+    let groupBookings = [record];
+    if (booking_group_id) {
+      const { data: allBookings } = await supabase
+        .from('bookings')
+        .select('*, room_units(room_number, room_types(title, price))')
+        .eq('booking_group_id', booking_group_id);
+      if (allBookings && allBookings.length > 0) {
+        groupBookings = allBookings;
+      }
+    } else {
+      // For old bookings without a group ID, fetch the related room info for the single record
+      const { data: singleBooking } = await supabase
+        .from('bookings')
+        .select('*, room_units(room_number, room_types(title, price))')
+        .eq('id', record.id)
+        .single();
+      if (singleBooking) groupBookings = [singleBooking];
+    }
+
+    const nights = Math.max(1, Math.ceil((new Date(check_out).getTime() - new Date(check_in).getTime()) / (1000 * 3600 * 24)));
+    let totalAmount = 0;
+    let roomsListHtml = "";
+
+    groupBookings.forEach((b: any) => {
+      const roomTitle = b.room_units?.room_types?.title || 'Room';
+      const roomPrice = b.room_units?.room_types?.price || 0;
+      totalAmount += roomPrice * nights;
+      roomsListHtml += `<p style="margin: 4px 0; color: #4b5563;">• ${roomTitle}</p>`;
+    });
 
     // Generate WhatsApp link if phone exists (strips non-numeric characters)
     let whatsappButton = "";
@@ -94,6 +143,12 @@ Deno.serve(async (req) => {
           <p style="margin: 8px 0; color: #4b5563;"><strong>Check-in:</strong> ${new Date(check_in).toLocaleDateString()}</p>
           <p style="margin: 8px 0; color: #4b5563;"><strong>Check-out:</strong> ${new Date(check_out).toLocaleDateString()}</p>
           <p style="margin: 8px 0; color: #4b5563;"><strong>Status:</strong> ${booking_status}</p>
+          <div style="margin: 16px 0 8px 0; color: #4b5563;"><strong>Rooms Booked:</strong></div>
+          ${roomsListHtml}
+          <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #e5e7eb;">
+            <p style="margin: 0; color: #111827; font-size: 18px;"><strong>Total Amount: $${totalAmount}</strong></p>
+            <p style="margin: 4px 0 0 0; color: #6b7280; font-size: 14px;">(To be paid on arrival)</p>
+          </div>
         </div>
         
         <p style="color: #374151; font-size: 16px; line-height: 24px;">

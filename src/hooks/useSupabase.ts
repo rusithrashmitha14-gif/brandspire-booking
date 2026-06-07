@@ -555,6 +555,7 @@ export function useAllBookings(propertyId?: string) {
           check_out,
           booking_status,
           created_at,
+          booking_group_id,
           room_units (
             room_number,
             room_types ( title, price )
@@ -574,13 +575,12 @@ export function useAllBookings(propertyId?: string) {
 export function useUpdateBookingStatus() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, status }: { id: string, status: string }) => {
+    mutationFn: async ({ groupId, status }: { groupId: string, status: string }) => {
       const { data, error } = await supabase
         .from('bookings')
         .update({ booking_status: status })
-        .eq('id', id)
-        .select()
-        .single();
+        .eq('booking_group_id', groupId)
+        .select();
         
       if (error) throw error;
       return data;

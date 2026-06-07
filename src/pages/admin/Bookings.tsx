@@ -26,7 +26,37 @@ export default function Bookings() {
   const { data: bookings = [], isLoading, error } = useAllBookings(property?.id);
   const { mutateAsync: updateStatus } = useUpdateBookingStatus();
 
-  const handleStatusChange = async (id: string, status: string) => {
+  const groupedBookings = React.useMemo(() => {
+    const groups: Record<string, any> = {};
+    for (const b of bookings) {
+      const groupId = b.booking_group_id || b.id;
+      if (!groups[groupId]) {
+        groups[groupId] = {
+          id: groupId,
+          guest_name: b.guest_name,
+          guest_email: b.guest_email,
+          guest_phone: b.guest_phone,
+          check_in: b.check_in,
+          check_out: b.check_out,
+          created_at: b.created_at,
+          booking_status: b.booking_status,
+          total_amount: 0,
+          rooms: []
+        };
+      }
+      const nights = Math.max(1, Math.ceil((new Date(b.check_out).getTime() - new Date(b.check_in).getTime()) / (1000 * 3600 * 24)));
+      const price = b.room_units?.room_types?.price || 0;
+      groups[groupId].total_amount += price * nights;
+      groups[groupId].rooms.push({
+        title: b.room_units?.room_types?.title,
+        room_number: b.room_units?.room_number
+      });
+    }
+    // Sort by created_at descending
+    return Object.values(groups).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  }, [bookings]);
+
+  const handleStatusChange = async (groupId: string, status: string) => {
     if (status === 'Cancelled') {
       if (!window.confirm("Are you sure you want to cancel this booking? This will free up the room in the calendar.")) {
         return;
@@ -34,7 +64,7 @@ export default function Bookings() {
     }
     
     try {
-      await updateStatus({ id, status });
+      await updateStatus({ groupId, status });
     } catch (err) {
       alert("Failed to update booking status.");
       console.error(err);
@@ -94,7 +124,7 @@ export default function Bookings() {
                 </TableCell>
               </TableRow>
             )}
-            {bookings.map((booking: any) => (
+            {groupedBookings.map((booking: any) => (
               <TableRow key={booking.id}>
                 <TableCell className="font-medium">
                   {booking.guest_name}
@@ -119,11 +149,17 @@ export default function Bookings() {
                   <div className="text-muted-foreground">to {format(new Date(booking.check_out), 'MMM d, yyyy')}</div>
                 </TableCell>
                 <TableCell className="text-sm">
-                  <div className="font-medium">{booking.room_units?.room_types?.title}</div>
-                  <div className="text-muted-foreground">Unit: {booking.room_units?.room_number}</div>
+                  <div className="space-y-2">
+                    {booking.rooms.map((room: any, i: number) => (
+                      <div key={i}>
+                        <div className="font-medium">{room.title}</div>
+                        <div className="text-xs text-muted-foreground">Unit: {room.room_number}</div>
+                      </div>
+                    ))}
+                  </div>
                 </TableCell>
                 <TableCell className="font-medium">
-                  ${(booking.room_units?.room_types?.price || 0) * Math.max(1, Math.ceil((new Date(booking.check_out).getTime() - new Date(booking.check_in).getTime()) / (1000 * 3600 * 24)))}
+                  ${booking.total_amount}
                 </TableCell>
                 <TableCell>
                   {getStatusBadge(booking.booking_status)}
