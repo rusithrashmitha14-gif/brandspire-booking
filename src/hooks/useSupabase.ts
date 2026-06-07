@@ -55,11 +55,17 @@ export function useEnsureProperty() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async () => {
-      const { data: existing } = await supabase.from('properties').select('id').limit(1).single();
-      if (existing) return existing;
-
       const { data: user } = await supabase.auth.getUser();
       if (!user.user) throw new Error("Not authenticated");
+
+      const { data: existing } = await supabase
+        .from('properties')
+        .select('id')
+        .eq('user_id', user.user.id)
+        .limit(1)
+        .single();
+        
+      if (existing) return existing;
 
       const { data, error } = await supabase
         .from('properties')

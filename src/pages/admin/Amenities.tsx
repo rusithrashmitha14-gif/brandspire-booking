@@ -57,13 +57,17 @@ export default function Amenities() {
   });
 
   async function onSubmit(data: AmenityFormValues) {
-    if (!property?.id) return;
+    if (!property?.id) {
+      alert("Property ID is missing. Please refresh the page.");
+      return;
+    }
     try {
       await createAmenity({ ...data, property_id: property.id });
       setOpen(false);
       form.reset();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to create amenity:", error);
+      alert(`Error creating amenity: ${error.message || JSON.stringify(error)}`);
     }
   }
 
