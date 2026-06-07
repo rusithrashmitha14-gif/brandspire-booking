@@ -46,6 +46,7 @@ const roomTypeSchema = z.object({
   quantity: z.coerce.number().min(1, 'Must have at least 1 room unit.'),
   price: z.coerce.number().min(0, 'Price must be positive.'),
   amenity_ids: z.array(z.string()).default([]),
+  is_entire_property: z.boolean().default(false),
 });
 
 type RoomTypeFormValues = z.infer<typeof roomTypeSchema>;
@@ -81,9 +82,11 @@ export default function Rooms() {
       bed_type: '1 King Bed',
       view_type: 'City View',
       featured_image: '',
+      gallery_images_text: '',
       quantity: 1,
       price: 0,
       amenity_ids: [],
+      is_entire_property: false,
     },
   });
 
@@ -106,6 +109,7 @@ export default function Rooms() {
       quantity: room.quantity,
       price: room.price,
       amenity_ids: currentAmenityIds,
+      is_entire_property: room.is_entire_property || false,
     });
     setOpen(true);
   };
@@ -121,9 +125,11 @@ export default function Rooms() {
       bed_type: '1 King Bed',
       view_type: 'City View',
       featured_image: '',
+      gallery_images_text: '',
       quantity: 1,
       price: 0,
       amenity_ids: [],
+      is_entire_property: false,
     });
     setOpen(true);
   };
@@ -362,50 +368,80 @@ export default function Rooms() {
                 <div className="border-t pt-4">
                   <h4 className="text-base font-medium mb-1">Room Amenities</h4>
                   <p className="text-[0.8rem] text-muted-foreground mb-4">
-                    Select the amenities included in this room type.
-                  </p>
-                  {amenities.length === 0 ? (
-                    <div className="text-sm text-muted-foreground p-4 bg-muted/50 rounded-md">
-                      No amenities found in the database. Please run the SQL seed script to add them.
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                      {amenities.map((item) => (
-                        <FormField
-                          key={item.id}
-                          control={form.control}
-                          name="amenity_ids"
-                          render={({ field }) => {
-                            return (
-                              <FormItem
-                                key={item.id}
-                                className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-3 bg-card"
-                              >
-                                <FormControl>
-                                  <Checkbox
-                                    checked={field.value?.includes(item.id)}
-                                    onCheckedChange={(checked) => {
-                                      return checked
-                                        ? field.onChange([...field.value, item.id])
-                                        : field.onChange(
-                                            field.value?.filter(
-                                              (value) => value !== item.id
-                                            )
-                                          )
-                                    }}
-                                  />
-                                </FormControl>
-                                <FormLabel className="font-normal cursor-pointer flex-1">
-                                  {item.icon && <span className="mr-2 text-muted-foreground">{item.icon}</span>}
-                                  {item.name}
-                                </FormLabel>
-                              </FormItem>
-                            )
-                          }}
-                        />
-                      ))}
-                    </div>
-                  )}
+                  <FormField
+                    control={form.control}
+                    name="amenity_ids"
+                    render={() => (
+                      <FormItem>
+                        <div className="mb-4">
+                          <FormLabel className="text-base">Amenities</FormLabel>
+                          <FormDescription>
+                            Select the amenities available in this room type.
+                          </FormDescription>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 mt-2 max-h-48 overflow-y-auto p-2 border rounded-md">
+                          {amenities?.map((amenity: any) => (
+                            <FormField
+                              key={amenity.id}
+                              control={form.control}
+                              name="amenity_ids"
+                              render={({ field }) => {
+                                return (
+                                  <FormItem
+                                    key={amenity.id}
+                                    className="flex flex-row items-start space-x-3 space-y-0"
+                                  >
+                                    <FormControl>
+                                      <Checkbox
+                                        checked={field.value?.includes(amenity.id)}
+                                        onCheckedChange={(checked) => {
+                                          return checked
+                                            ? field.onChange([...field.value, amenity.id])
+                                            : field.onChange(
+                                                field.value?.filter(
+                                                  (value) => value !== amenity.id
+                                                )
+                                              )
+                                        }}
+                                      />
+                                    </FormControl>
+                                    <FormLabel className="font-normal flex items-center gap-2">
+                                      <span dangerouslySetInnerHTML={{ __html: amenity.icon }} className="w-4 h-4 [&>svg]:w-4 [&>svg]:h-4" />
+                                      {amenity.name}
+                                    </FormLabel>
+                                  </FormItem>
+                                )
+                              }}
+                            />
+                          ))}
+                        </div>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="is_entire_property"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 shadow-sm bg-muted/50 mt-4">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <div className="space-y-1 leading-none">
+                          <FormLabel>
+                            This room represents the entire property (Villa Mode)
+                          </FormLabel>
+                          <FormDescription>
+                            If checked, booking this room will automatically block all other individual rooms. Conversely, it cannot be booked if any individual room is already booked.
+                          </FormDescription>
+                        </div>
+                      </FormItem>
+                    )}
+                  />
                 </div>
 
                 <div className="flex justify-end pt-4 border-t">

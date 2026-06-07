@@ -65,7 +65,7 @@ export default function EmbedWidget() {
   const [checkIn, setCheckIn] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
   const [checkOut, setCheckOut] = useState<string>(format(addDays(new Date(), 1), 'yyyy-MM-dd'));
   const [guests, setGuests] = useState<number>(2);
-  const [selectedRoom, setSelectedRoom] = useState<any>(null);
+  const [cart, setCart] = useState<{ room: any; quantity: number; guests_per_room: number }[]>([]);
   const [viewingRoom, setViewingRoom] = useState<any>(null);
   const [activeImage, setActiveImage] = useState<string>('');
 
@@ -96,23 +96,43 @@ export default function EmbedWidget() {
     setStep('results');
   };
 
-  const handleSelectRoom = (room: any) => {
-    setSelectedRoom(room);
-    setStep('checkout');
+  const handleAddToCart = (room: any) => {
+    setCart(prev => {
+      const existing = prev.find(item => item.room.room_type_id === room.room_type_id);
+      if (existing) {
+        if (existing.quantity >= room.available_units) return prev;
+        return prev.map(item => item.room.room_type_id === room.room_type_id ? { ...item, quantity: item.quantity + 1 } : item);
+      }
+      return [...prev, { room, quantity: 1, guests_per_room: guests }];
+    });
+  };
+
+  const handleRemoveFromCart = (room: any) => {
+    setCart(prev => {
+      const existing = prev.find(item => item.room.room_type_id === room.room_type_id);
+      if (existing && existing.quantity > 1) {
+        return prev.map(item => item.room.room_type_id === room.room_type_id ? { ...item, quantity: item.quantity - 1 } : item);
+      }
+      return prev.filter(item => item.room.room_type_id !== room.room_type_id);
+    });
   };
 
   const onCheckoutSubmit = async (data: z.infer<typeof checkoutSchema>) => {
     try {
       await createBooking({
         p_property_id: property.id,
-        p_room_type_id: selectedRoom.id || selectedRoom.room_type_id,
         p_check_in: checkIn,
         p_check_out: checkOut,
-        p_guests: guests,
         p_guest_name: data.name,
         p_guest_email: data.email,
         p_guest_phone: data.phone,
+        p_cart_items: cart.map(item => ({
+          room_type_id: item.room.room_type_id,
+          quantity: item.quantity,
+          guests_per_room: item.guests_per_room
+        }))
       });
+      setCart([]);
       setStep('success');
     } catch (err: any) {
       alert(err.message || "Failed to create booking.");
@@ -207,13 +227,37 @@ export default function EmbedWidget() {
                           <p className="text-xs text-muted-foreground uppercase tracking-wide font-semibold mb-1">Nightly Rate</p>
                           <p className="text-2xl font-bold text-primary">${room.price}</p>
                         </div>
-                        <Button size="lg" variant="outline" className="px-6">
-                          View Details
-                        </Button>
-                      </div>
+                        <div className="flex items-center gap-3">
+                          <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); setViewingRoom(room); setActiveImage(room.featured_image || ''); }}>
+                            View Details
+                          </Button>
+                          {cart.find(item => item.room.room_type_id === room.room_type_id) ? (
+                            <div className="flex items-center border rounded-md" onClick={e => e.stopPropagation()}>
+                              <Button size="icon" variant="ghost" className="h-10 w-10" onClick={() => handleRemoveFromCart(room)}>-</Button>
+                              <span className="w-8 text-center font-semibold">{cart.find(item => item.room.room_type_id === room.room_type_id)?.quantity}</span>
+                              <Button size="icon" variant="ghost" className="h-10 w-10" onClick={() => handleAddToCart(room)} disabled={cart.find(item => item.room.room_type_id === room.room_type_id)?.quantity! >= room.available_units}>+</Button>
+                            </div>
+                          ) : (
+                            <Button size="lg" className="px-6" onClick={(e) => { e.stopPropagation(); handleAddToCart(room); }}>
+                              Select Room
+                            </Button>
+                          )}
+                        </div>
                     </div>
                   </div>
                 ))
+              )}
+
+              {cart.length > 0 && (
+                <div className="sticky bottom-4 mt-8 p-4 bg-primary text-primary-foreground rounded-xl shadow-2xl flex justify-between items-center z-10 animate-in slide-in-from-bottom-5">
+                  <div>
+                    <p className="font-semibold text-lg">{cart.reduce((sum, item) => sum + item.quantity, 0)} Room(s) Selected</p>
+                    <p className="text-primary-foreground/80 text-sm">Total: ${cart.reduce((sum, item) => sum + (item.room.price * item.quantity), 0)} / night</p>
+                  </div>
+                  <Button size="lg" variant="secondary" className="px-8 font-bold" onClick={() => setStep('checkout')}>
+                    Proceed to Checkout
+                  </Button>
+                </div>
               )}
             </div>
           )}
@@ -302,31 +346,36 @@ export default function EmbedWidget() {
           </Dialog>
 
           {/* Step 3: Checkout Flow */}
-          {step === 'checkout' && selectedRoom && (
+          {step === 'checkout' && cart.length > 0 && (
             <div className="max-w-2xl mx-auto">
               <Button variant="ghost" className="mb-6 -ml-4" onClick={() => setStep('results')}>
                 <ArrowLeft className="w-4 h-4 mr-2" /> Back to Rooms
               </Button>
               
               <div className="bg-muted/30 p-6 rounded-xl border mb-8">
-                <h3 className="font-semibold text-lg mb-2">Booking Summary</h3>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <span className="text-muted-foreground block">Room</span>
-                    <span className="font-medium">{selectedRoom.title}</span>
-                  </div>
+                <h3 className="font-semibold text-lg mb-4 border-b pb-2">Booking Summary</h3>
+                
+                <div className="space-y-4 mb-4 border-b pb-4">
+                  {cart.map((item, idx) => (
+                    <div key={idx} className="flex justify-between items-center text-sm">
+                      <div>
+                        <span className="font-medium block">{item.room.title}</span>
+                        <span className="text-muted-foreground">{item.quantity} room(s) × {item.guests_per_room} guests</span>
+                      </div>
+                      <span className="font-medium">${item.room.price * item.quantity} / night</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 text-sm mt-4">
                   <div>
                     <span className="text-muted-foreground block">Dates</span>
                     <span className="font-medium">{format(new Date(checkIn), 'MMM d')} - {format(new Date(checkOut), 'MMM d, yyyy')}</span>
                   </div>
-                  <div>
-                    <span className="text-muted-foreground block">Guests</span>
-                    <span className="font-medium">{guests}</span>
-                  </div>
-                  <div>
+                  <div className="text-right">
                     <span className="text-muted-foreground block">Total Price</span>
-                    <span className="font-bold text-primary text-lg">
-                      ${selectedRoom.price * Math.ceil((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / (1000 * 3600 * 24))}
+                    <span className="font-bold text-primary text-xl">
+                      ${cart.reduce((sum, item) => sum + (item.room.price * item.quantity), 0) * Math.ceil((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / (1000 * 3600 * 24))}
                     </span>
                   </div>
                 </div>

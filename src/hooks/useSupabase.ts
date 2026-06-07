@@ -359,27 +359,27 @@ export function useAvailableRooms(propertyId: string, checkIn: string, checkOut:
   });
 }
 
-// Create a new booking
+// Create multiple bookings via cart
 export function useCreateBooking() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (bookingData: {
       p_property_id: string;
-      p_room_type_id: string;
       p_check_in: string;
       p_check_out: string;
-      p_guests: number;
       p_guest_name: string;
       p_guest_email: string;
       p_guest_phone: string;
+      p_cart_items: { room_type_id: string; quantity: number; guests_per_room: number }[];
     }) => {
-      const { data, error } = await supabase.rpc('create_booking', bookingData);
+      const { data, error } = await supabase.rpc('create_cart_bookings', bookingData);
       
       if (error) throw error;
-      return data;
+      return data; // Returns booking_group_id
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['available_rooms'] });
+      queryClient.invalidateQueries({ queryKey: ['property_bookings'] });
     }
   });
 }
