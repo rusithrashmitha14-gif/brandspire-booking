@@ -60,7 +60,8 @@ export default function EmbedWidget() {
   const { propertyId } = useParams();
   const { data: property, isLoading: isPropertyLoading } = usePublicProperty(propertyId);
   
-  const [step, setStep] = useState<'search' | 'results' | 'checkout' | 'success'>('search');
+  const [step, setStep] = useState<'search' | 'results' | 'checkout' | 'payment' | 'success'>('search');
+  const [guestDetails, setGuestDetails] = useState<any>(null);
   
   const [checkIn, setCheckIn] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
   const [checkOut, setCheckOut] = useState<string>(format(addDays(new Date(), 1), 'yyyy-MM-dd'));
@@ -117,15 +118,21 @@ export default function EmbedWidget() {
     });
   };
 
-  const onCheckoutSubmit = async (data: z.infer<typeof checkoutSchema>) => {
+  const onCheckoutSubmit = (data: z.infer<typeof checkoutSchema>) => {
+    setGuestDetails(data);
+    setStep('payment');
+  };
+
+  const onPaymentSubmit = async () => {
+    if (!guestDetails) return;
     try {
       await createBooking({
         p_property_id: property.id,
         p_check_in: checkIn,
         p_check_out: checkOut,
-        p_guest_name: data.name,
-        p_guest_email: data.email,
-        p_guest_phone: data.phone,
+        p_guest_name: guestDetails.name,
+        p_guest_email: guestDetails.email,
+        p_guest_phone: guestDetails.phone,
         p_cart_items: cart.map(item => ({
           room_type_id: item.room.room_type_id,
           quantity: item.quantity,
@@ -428,11 +435,46 @@ export default function EmbedWidget() {
                       )}
                     />
                   </div>
-                  <Button type="submit" size="lg" className="w-full h-12 text-lg mt-4" disabled={isBooking}>
-                    {isBooking ? 'Processing...' : 'Confirm Booking'}
+                  <Button type="submit" size="lg" className="w-full h-12 text-lg mt-4">
+                    Continue to Payment
                   </Button>
                 </form>
               </Form>
+            </div>
+          )}
+
+          {/* Step 4: Payment Flow */}
+          {step === 'payment' && guestDetails && (
+            <div className="max-w-xl mx-auto">
+              <Button variant="ghost" className="mb-6 -ml-4" onClick={() => setStep('checkout')}>
+                <ArrowLeft className="w-4 h-4 mr-2" /> Back to Details
+              </Button>
+              
+              <div className="bg-card p-8 rounded-xl border shadow-sm">
+                <h3 className="text-2xl font-semibold mb-6">Payment Method</h3>
+                
+                <div className="border rounded-lg p-4 border-primary bg-primary/5 flex items-center justify-between mb-8 cursor-default">
+                  <div className="flex items-center gap-3">
+                    <div className="w-5 h-5 rounded-full border-2 border-primary flex items-center justify-center">
+                      <div className="w-2.5 h-2.5 bg-primary rounded-full"></div>
+                    </div>
+                    <div>
+                      <p className="font-medium">Pay on Arrival</p>
+                      <p className="text-sm text-muted-foreground">You will pay at the property during check-in.</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="border-t pt-6 space-y-4">
+                  <div className="flex justify-between text-lg font-medium">
+                    <span>Total Amount</span>
+                    <span>${cart.reduce((sum, item) => sum + (item.room.price * item.quantity), 0) * Math.ceil((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / (1000 * 3600 * 24))}</span>
+                  </div>
+                  <Button size="lg" className="w-full h-14 text-lg" disabled={isBooking} onClick={onPaymentSubmit}>
+                    {isBooking ? 'Processing...' : 'Place Booking'}
+                  </Button>
+                </div>
+              </div>
             </div>
           )}
 
