@@ -210,12 +210,15 @@ export default function EmbedWidget() {
               ) : (
                 availableRooms.map((room: any) => {
                   const cartItem = cart.find(item => item.room.room_type_id === room.room_type_id);
-                  const isMaxReached = cartItem ? cartItem.quantity >= room.available_units : false;
+                  const isConflicting = room.is_entire_property 
+                    ? (cart.length > 0 && !cart.some(item => item.room.is_entire_property))
+                    : cart.some(item => item.room.is_entire_property);
+                  const isMaxReached = isConflicting || (cartItem ? cartItem.quantity >= room.available_units : false);
                   
                   return (
                     <div 
                       key={room.room_type_id} 
-                      className="flex flex-col md:flex-row gap-6 p-4 rounded-xl border bg-card hover:border-primary/50 transition-colors shadow-sm cursor-pointer"
+                      className={`flex flex-col md:flex-row gap-6 p-4 rounded-xl border bg-card transition-colors shadow-sm cursor-pointer ${isConflicting ? 'opacity-50 grayscale' : 'hover:border-primary/50'}`}
                       onClick={() => { setViewingRoom(room); setActiveImage(room.featured_image || ''); }}
                     >
                       <div className="w-full md:w-1/3 aspect-video bg-muted rounded-lg overflow-hidden flex items-center justify-center text-muted-foreground relative">
@@ -223,7 +226,7 @@ export default function EmbedWidget() {
                       </div>
                       <div className="flex-1 flex flex-col justify-between py-1">
                         <div>
-                          <h4 className="text-xl font-semibold mb-2">{room.title}</h4>
+                          <h4 className="text-xl font-semibold mb-2">{room.title} {room.is_entire_property && <span className="text-xs ml-2 bg-primary/10 text-primary px-2 py-1 rounded-full uppercase tracking-wider">Entire Villa</span>}</h4>
                           <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{room.description || "A beautiful room ready for your stay."}</p>
                         </div>
                         <div className="flex justify-between items-end mt-4 pt-4 border-t">
@@ -242,8 +245,8 @@ export default function EmbedWidget() {
                                 <Button size="icon" variant="ghost" className="h-10 w-10" onClick={() => handleAddToCart(room)} disabled={isMaxReached}>+</Button>
                               </div>
                             ) : (
-                              <Button size="lg" className="px-6" onClick={(e) => { e.stopPropagation(); handleAddToCart(room); }}>
-                                Select Room
+                              <Button size="lg" className="px-6" disabled={isConflicting} onClick={(e) => { e.stopPropagation(); handleAddToCart(room); }}>
+                                {isConflicting ? 'Unavailable' : 'Select Room'}
                               </Button>
                             )}
                           </div>

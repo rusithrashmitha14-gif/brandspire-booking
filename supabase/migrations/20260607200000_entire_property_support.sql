@@ -38,7 +38,8 @@ RETURNS TABLE (
   bed_type text,
   view_type text,
   gallery_images text[],
-  amenities text[]
+  amenities text[],
+  is_entire_property boolean
 ) AS $$
 BEGIN
   RETURN QUERY
@@ -59,7 +60,8 @@ BEGIN
       FROM room_amenities ra
       JOIN amenities a ON a.id = ra.amenity_id
       WHERE ra.room_type_id = rt.id
-    ) as amenities
+    ) as amenities,
+    rt.is_entire_property
   FROM room_types rt
   JOIN room_units ru ON ru.room_type_id = rt.id
   WHERE rt.property_id = p_property_id
