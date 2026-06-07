@@ -214,14 +214,14 @@ export default function Settings() {
   width="100%" 
   height="900px" 
   style="border:none;"
-></iframe>`}
+>${'</'}iframe>`}
               </pre>
               <Button 
                 variant="secondary" 
                 size="sm" 
                 className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
                 onClick={() => {
-                  const code = `<iframe src="${window.location.origin}/embed/${property?.slug || property?.id}" width="100%" height="900px" style="border:none;"></iframe>`;
+                  const code = `<iframe src="${window.location.origin}/embed/${property?.slug || property?.id}" width="100%" height="900px" style="border:none;">${'</'}iframe>`;
                   navigator.clipboard.writeText(code);
                   alert("Copied to clipboard!");
                 }}
