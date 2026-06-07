@@ -1,0 +1,401 @@
+import React, { useState } from 'react';
+import { useParams } from 'react-router-dom';
+import { format, addDays } from 'date-fns';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { Calendar as CalendarIcon, Users, BedDouble, ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/lib/supabase';
+import { useAvailableRooms, useCreateBooking } from '@/hooks/useSupabase';
+
+// Custom hook to fetch property by slug or ID
+function usePublicProperty(propertyIdentifier?: string) {
+  return useQuery({
+    queryKey: ['public_property', propertyIdentifier],
+    queryFn: async () => {
+      if (!propertyIdentifier) return null;
+      let query = supabase.from('properties').select('*');
+      
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (uuidRegex.test(propertyIdentifier)) {
+        query = query.eq('id', propertyIdentifier);
+      } else {
+        query = query.eq('slug', propertyIdentifier);
+      }
+      
+      const { data, error } = await query.single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!propertyIdentifier,
+  });
+}
+
+const checkoutSchema = z.object({
+  name: z.string().min(2, 'Name is required'),
+  email: z.string().email('Invalid email address'),
+  phone: z.string().min(5, 'Phone number is required'),
+});
+
+export default function EmbedWidget() {
+  const { propertyId } = useParams();
+  const { data: property, isLoading: isPropertyLoading } = usePublicProperty(propertyId);
+  
+  const [step, setStep] = useState<'search' | 'results' | 'checkout' | 'success'>('search');
+  
+  const [checkIn, setCheckIn] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
+  const [checkOut, setCheckOut] = useState<string>(format(addDays(new Date(), 1), 'yyyy-MM-dd'));
+  const [guests, setGuests] = useState<number>(2);
+  const [selectedRoom, setSelectedRoom] = useState<any>(null);
+  const [viewingRoom, setViewingRoom] = useState<any>(null);
+  const [activeImage, setActiveImage] = useState<string>('');
+
+  const { data: availableRooms = [], isFetching: isSearching } = useAvailableRooms(
+    property?.id as string, 
+    checkIn, 
+    checkOut, 
+    guests, 
+    step === 'results'
+  );
+
+  const { mutateAsync: createBooking, isPending: isBooking } = useCreateBooking();
+
+  const form = useForm<z.infer<typeof checkoutSchema>>({
+    resolver: zodResolver(checkoutSchema),
+    defaultValues: {
+      name: '',
+      email: '',
+      phone: '',
+    },
+  });
+
+  const handleSearch = () => {
+    if (new Date(checkOut) <= new Date(checkIn)) {
+      alert("Check-out date must be after check-in date.");
+      return;
+    }
+    setStep('results');
+  };
+
+  const handleSelectRoom = (room: any) => {
+    setSelectedRoom(room);
+    setStep('checkout');
+  };
+
+  const onCheckoutSubmit = async (data: z.infer<typeof checkoutSchema>) => {
+    try {
+      await createBooking({
+        p_property_id: property.id,
+        p_room_type_id: selectedRoom.id || selectedRoom.room_type_id,
+        p_check_in: checkIn,
+        p_check_out: checkOut,
+        p_guests: guests,
+        p_guest_name: data.name,
+        p_guest_email: data.email,
+        p_guest_phone: data.phone,
+      });
+      setStep('success');
+    } catch (err: any) {
+      alert(err.message || "Failed to create booking.");
+    }
+  };
+
+  if (isPropertyLoading) return <div className="min-h-screen p-8 text-center">Loading...</div>;
+  if (!property) return <div className="min-h-screen p-8 text-center text-destructive">Property not found.</div>;
+
+  return (
+    <div className="min-h-screen bg-transparent p-4 flex flex-col items-center font-sans">
+      <Card className="w-full max-w-4xl border-none shadow-xl bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 overflow-hidden">
+        <div className="h-2 w-full bg-primary" />
+        <CardContent className="p-6 md:p-8">
+          
+          {/* Header */}
+          <div className="flex flex-col items-center justify-center mb-8">
+            <div className="w-14 h-14 bg-primary/10 rounded-full flex items-center justify-center text-primary font-bold text-2xl mb-3">
+              {property.name.charAt(0)}
+            </div>
+            <h2 className="text-2xl font-semibold tracking-tight">Book your stay at {property.name}</h2>
+          </div>
+
+          {/* Step 1: Search Form */}
+          {step === 'search' && (
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-5 bg-muted/30 rounded-2xl border">
+              <div className="space-y-1.5 md:col-span-1">
+                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider ml-1">Check In</Label>
+                <div className="relative">
+                  <CalendarIcon className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input type="date" value={checkIn} onChange={e => setCheckIn(e.target.value)} className="pl-9 bg-background h-11" />
+                </div>
+              </div>
+              <div className="space-y-1.5 md:col-span-1">
+                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider ml-1">Check Out</Label>
+                <div className="relative">
+                  <CalendarIcon className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input type="date" value={checkOut} onChange={e => setCheckOut(e.target.value)} className="pl-9 bg-background h-11" />
+                </div>
+              </div>
+              <div className="space-y-1.5 md:col-span-1">
+                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider ml-1">Guests</Label>
+                <div className="relative">
+                  <Users className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input type="number" min="1" value={guests} onChange={e => setGuests(parseInt(e.target.value) || 1)} className="pl-9 bg-background h-11" />
+                </div>
+              </div>
+              <div className="md:col-span-1 flex items-end">
+                <Button className="w-full h-11" size="lg" onClick={handleSearch}>Check Availability</Button>
+              </div>
+            </div>
+          )}
+
+          {/* Step 2: Results */}
+          {step === 'results' && (
+            <div className="space-y-6">
+              <div className="flex justify-between items-center mb-4 border-b pb-4">
+                <div>
+                  <h3 className="text-lg font-semibold">Available Rooms</h3>
+                  <p className="text-sm text-muted-foreground">
+                    {format(new Date(checkIn), 'MMM d, yyyy')} - {format(new Date(checkOut), 'MMM d, yyyy')} • {guests} Guests
+                  </p>
+                </div>
+                <Button variant="ghost" onClick={() => setStep('search')}>Modify Search</Button>
+              </div>
+
+              {isSearching ? (
+                <div className="py-12 text-center text-muted-foreground animate-pulse">Searching for availability...</div>
+              ) : availableRooms.length === 0 ? (
+                <div className="py-12 text-center border rounded-xl bg-muted/20">
+                  <h4 className="text-lg font-medium mb-2">No Rooms Available</h4>
+                  <p className="text-muted-foreground mb-4">We're fully booked for these dates, or no room can accommodate {guests} guests.</p>
+                  <Button variant="outline" onClick={() => setStep('search')}>Try different dates</Button>
+                </div>
+              ) : (
+                availableRooms.map((room: any) => (
+                  <div 
+                    key={room.room_type_id} 
+                    className="flex flex-col md:flex-row gap-6 p-4 rounded-xl border bg-card hover:border-primary/50 transition-colors shadow-sm cursor-pointer"
+                    onClick={() => { setViewingRoom(room); setActiveImage(room.featured_image || ''); }}
+                  >
+                    <div className="w-full md:w-1/3 aspect-video bg-muted rounded-lg overflow-hidden flex items-center justify-center text-muted-foreground relative">
+                      {room.featured_image ? <img src={room.featured_image} alt={room.title} className="w-full h-full object-cover" /> : <BedDouble className="w-10 h-10 opacity-20" />}
+                    </div>
+                    <div className="flex-1 flex flex-col justify-between py-1">
+                      <div>
+                        <h4 className="text-xl font-semibold mb-2">{room.title}</h4>
+                        <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{room.description || "A beautiful room ready for your stay."}</p>
+                      </div>
+                      <div className="flex justify-between items-end mt-4 pt-4 border-t">
+                        <div>
+                          <p className="text-xs text-muted-foreground uppercase tracking-wide font-semibold mb-1">Nightly Rate</p>
+                          <p className="text-2xl font-bold text-primary">${room.price}</p>
+                        </div>
+                        <Button size="lg" variant="outline" className="px-6">
+                          View Details
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+
+          {/* Room Details Dialog */}
+          <Dialog open={!!viewingRoom} onOpenChange={(open) => !open && setViewingRoom(null)}>
+            <DialogContent className="max-w-3xl p-0 overflow-hidden bg-background">
+              {viewingRoom && (
+                <div className="flex flex-col md:flex-row h-full max-h-[85vh]">
+                  {/* Left: Images */}
+                  <div className="w-full md:w-1/2 bg-muted flex flex-col">
+                    <div className="w-full aspect-video md:aspect-square relative">
+                      {activeImage ? (
+                        <img src={activeImage} alt={viewingRoom.title} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center"><BedDouble className="w-10 h-10 opacity-20" /></div>
+                      )}
+                    </div>
+                    {viewingRoom.gallery_images && viewingRoom.gallery_images.length > 0 && (
+                      <div className="flex gap-2 overflow-x-auto p-4 bg-background border-t" style={{ scrollbarWidth: 'thin' }}>
+                        {viewingRoom.featured_image && (
+                          <img 
+                            src={viewingRoom.featured_image} 
+                            alt="Featured" 
+                            className={`w-20 h-14 object-cover rounded-md cursor-pointer border-2 ${activeImage === viewingRoom.featured_image ? 'border-primary' : 'border-transparent'}`}
+                            onClick={() => setActiveImage(viewingRoom.featured_image)}
+                          />
+                        )}
+                        {viewingRoom.gallery_images.map((img: string, i: number) => (
+                          <img 
+                            key={i} 
+                            src={img} 
+                            alt={`Gallery ${i+1}`} 
+                            className={`w-20 h-14 object-cover rounded-md cursor-pointer border-2 ${activeImage === img ? 'border-primary' : 'border-transparent'}`}
+                            onClick={() => setActiveImage(img)}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Right: Details */}
+                  <div className="w-full md:w-1/2 p-6 flex flex-col overflow-y-auto">
+                    <DialogHeader className="text-left mb-4">
+                      <DialogTitle className="text-2xl">{viewingRoom.title}</DialogTitle>
+                    </DialogHeader>
+                    
+                    <div className="space-y-4 flex-1">
+                      <p className="text-muted-foreground">{viewingRoom.description || "A beautiful room ready for your stay."}</p>
+                      
+                      <div className="grid grid-cols-2 gap-y-3 text-sm">
+                        <div className="flex items-center text-muted-foreground"><Users className="w-4 h-4 mr-2" /> Up to {viewingRoom.max_adults + viewingRoom.max_children} Guests</div>
+                        <div className="flex items-center text-muted-foreground"><BedDouble className="w-4 h-4 mr-2" /> {viewingRoom.bed_type || '1 Bed'}</div>
+                        <div className="col-span-2 text-muted-foreground"><strong>View:</strong> {viewingRoom.view_type || 'Standard View'}</div>
+                      </div>
+
+                      {/* Amenities section (Will populate once SQL is updated) */}
+                      {viewingRoom.amenities && viewingRoom.amenities.length > 0 && (
+                        <div className="pt-4 border-t mt-4">
+                          <h4 className="font-semibold mb-3">Amenities</h4>
+                          <div className="grid grid-cols-2 gap-2 text-sm text-muted-foreground">
+                            {viewingRoom.amenities.map((amenity: string, i: number) => (
+                              <div key={i} className="flex items-center">• {amenity}</div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="pt-6 border-t mt-6 flex justify-between items-center">
+                      <div>
+                        <p className="text-xs text-muted-foreground uppercase font-semibold">Nightly Rate</p>
+                        <p className="text-2xl font-bold text-primary">${viewingRoom.price}</p>
+                      </div>
+                      <Button size="lg" className="px-8 shadow-md hover:shadow-lg transition-all" onClick={() => {
+                        setViewingRoom(null);
+                        handleSelectRoom(viewingRoom);
+                      }}>
+                        Select Room
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </DialogContent>
+          </Dialog>
+
+          {/* Step 3: Checkout Flow */}
+          {step === 'checkout' && selectedRoom && (
+            <div className="max-w-2xl mx-auto">
+              <Button variant="ghost" className="mb-6 -ml-4" onClick={() => setStep('results')}>
+                <ArrowLeft className="w-4 h-4 mr-2" /> Back to Rooms
+              </Button>
+              
+              <div className="bg-muted/30 p-6 rounded-xl border mb-8">
+                <h3 className="font-semibold text-lg mb-2">Booking Summary</h3>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="text-muted-foreground block">Room</span>
+                    <span className="font-medium">{selectedRoom.title}</span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground block">Dates</span>
+                    <span className="font-medium">{format(new Date(checkIn), 'MMM d')} - {format(new Date(checkOut), 'MMM d, yyyy')}</span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground block">Guests</span>
+                    <span className="font-medium">{guests}</span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground block">Total Price</span>
+                    <span className="font-bold text-primary text-lg">
+                      ${selectedRoom.price * Math.ceil((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / (1000 * 3600 * 24))}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onCheckoutSubmit)} className="space-y-6">
+                  <h3 className="font-semibold text-lg">Guest Details</h3>
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Full Name</FormLabel>
+                        <FormControl><Input placeholder="John Doe" {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <FormField
+                      control={form.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Email Address</FormLabel>
+                          <FormControl><Input type="email" placeholder="john@example.com" {...field} /></FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="phone"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Phone Number</FormLabel>
+                          <FormControl><Input placeholder="+1 (555) 000-0000" {...field} /></FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  <Button type="submit" size="lg" className="w-full h-12 text-lg mt-4" disabled={isBooking}>
+                    {isBooking ? 'Processing...' : 'Confirm Booking'}
+                  </Button>
+                </form>
+              </Form>
+            </div>
+          )}
+
+          {/* Step 4: Success */}
+          {step === 'success' && (
+            <div className="text-center py-16 max-w-md mx-auto">
+              <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 text-green-600">
+                <CheckCircle2 className="w-10 h-10" />
+              </div>
+              <h3 className="text-3xl font-bold mb-4">Booking Confirmed!</h3>
+              <p className="text-muted-foreground mb-8 text-lg">
+                Thank you for booking with {property.name}. We have saved your reservation and look forward to hosting you!
+              </p>
+              <Button size="lg" variant="outline" onClick={() => { setStep('search'); form.reset(); }}>
+                Book Another Room
+              </Button>
+            </div>
+          )}
+
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
