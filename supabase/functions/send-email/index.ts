@@ -196,7 +196,7 @@ Deno.serve(async (req) => {
 
         const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${twilioAccountSid}/Messages.json`;
         
-        const messageBody = `🚨 *New Booking Alert!*\n\n${guest_name} has requested a reservation at ${hotelName}.\n\n📅 Dates: ${new Date(check_in).toLocaleDateString()} to ${new Date(check_out).toLocaleDateString()}\n🛏️ Rooms:\n${roomsListHtml.replace(/<[^>]*>?/gm, '').trim()}\n💰 Total: $${totalAmount}\n\nLog in to confirm: https://yourwebsite.com/admin/bookings`;
+        const messageBody = `🚨 *New Booking Alert!*\n\n${guest_name} has requested a reservation at ${hotelName}.\n\n📅 Dates: ${new Date(check_in).toLocaleDateString()} to ${new Date(check_out).toLocaleDateString()}\n🛏️ Rooms:\n${roomsListHtml.replace(/<[^>]*>?/gm, '').trim()}\n💰 Total: $${totalAmount}\n\nLog in to confirm: https://brandspire-booking.vercel.app/admin/bookings`;
 
         const twilioBody = new URLSearchParams({
           From: `whatsapp:${twilioNumber.replace('whatsapp:', '')}`, // Ensure format is whatsapp:+...
