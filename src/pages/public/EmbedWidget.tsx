@@ -104,6 +104,14 @@ export default function EmbedWidget() {
     return () => observer.disconnect();
   }, []);
 
+  // Scroll to top of widget when step changes
+  React.useEffect(() => {
+    // We use setTimeout to allow the DOM to render the new step before scrolling
+    setTimeout(() => {
+      document.getElementById('widget-top')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+  }, [step]);
+
   const handleSearch = () => {
     if (new Date(checkOut) <= new Date(checkIn)) {
       alert("Check-out date must be after check-in date.");
@@ -165,7 +173,7 @@ export default function EmbedWidget() {
   if (!property) return <div className="py-8 text-center text-destructive">Property not found.</div>;
 
   return (
-    <div className="bg-transparent p-4 flex flex-col items-center font-sans">
+    <div id="widget-top" className="bg-transparent p-4 flex flex-col items-center font-sans">
       <Card className="w-full max-w-4xl border-none shadow-xl bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 overflow-hidden">
         <div className="h-2 w-full bg-primary" />
         <CardContent className="p-6 md:p-8">
