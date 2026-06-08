@@ -6,6 +6,7 @@ import * as z from 'zod';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { formatCurrency } from '@/lib/utils';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   Table,
@@ -494,7 +495,7 @@ export default function Rooms() {
                   {room.room_amenities?.length || 0} selected
                 </TableCell>
                 <TableCell>{room.quantity}</TableCell>
-                <TableCell>${room.price}</TableCell>
+                <TableCell>{formatCurrency(room.price, property?.currency)}</TableCell>
                 <TableCell className="text-right space-x-2">
                   <Button variant="ghost" size="sm" onClick={() => handleEditClick(room)}>Edit</Button>
                   <Button variant="ghost" size="sm" className="text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={() => handleDeleteClick(room.id, room.title)}>Delete</Button>

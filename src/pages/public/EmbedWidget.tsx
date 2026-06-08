@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Calendar as CalendarIcon, Users, BedDouble, ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { formatCurrency } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -239,7 +240,7 @@ export default function EmbedWidget() {
                         <div className="flex justify-between items-end mt-4 pt-4 border-t">
                           <div>
                             <p className="text-xs text-muted-foreground uppercase tracking-wide font-semibold mb-1">Nightly Rate</p>
-                            <p className="text-2xl font-bold text-primary">${room.price}</p>
+                            <p className="text-2xl font-bold text-primary">{formatCurrency(room.price, property?.currency)}</p>
                           </div>
                           <div className="flex items-center gap-3">
                             <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); setViewingRoom(room); setActiveImage(room.featured_image || ''); }}>
@@ -268,7 +269,7 @@ export default function EmbedWidget() {
                 <div className="sticky bottom-4 mt-8 p-4 bg-primary text-primary-foreground rounded-xl shadow-2xl flex justify-between items-center z-10 animate-in slide-in-from-bottom-5">
                   <div>
                     <p className="font-semibold text-lg">{cart.reduce((sum, item) => sum + item.quantity, 0)} Room(s) Selected</p>
-                    <p className="text-primary-foreground/80 text-sm">Total: ${cart.reduce((sum, item) => sum + (item.room.price * item.quantity), 0)} / night</p>
+                    <p className="text-primary-foreground/80 text-sm">Total: {formatCurrency(cart.reduce((sum, item) => sum + (item.room.price * item.quantity), 0), property?.currency)} / night</p>
                   </div>
                   <Button size="lg" variant="secondary" className="px-8 font-bold" onClick={() => setStep('checkout')}>
                     Proceed to Checkout
@@ -346,11 +347,11 @@ export default function EmbedWidget() {
                     <div className="pt-6 border-t mt-6 flex justify-between items-center">
                       <div>
                         <p className="text-xs text-muted-foreground uppercase font-semibold">Nightly Rate</p>
-                        <p className="text-2xl font-bold text-primary">${viewingRoom.price}</p>
+                        <p className="text-2xl font-bold text-primary">{formatCurrency(viewingRoom.price, property?.currency)}</p>
                       </div>
                       <Button size="lg" className="px-8 shadow-md hover:shadow-lg transition-all" onClick={() => {
                         setViewingRoom(null);
-                        handleSelectRoom(viewingRoom);
+                        handleAddToCart(viewingRoom);
                       }}>
                         Select Room
                       </Button>
@@ -378,7 +379,7 @@ export default function EmbedWidget() {
                         <span className="font-medium block">{item.room.title}</span>
                         <span className="text-muted-foreground">{item.quantity} room(s) × {item.guests_per_room} guests</span>
                       </div>
-                      <span className="font-medium">${item.room.price * item.quantity} / night</span>
+                      <span className="font-medium">{formatCurrency(item.room.price * item.quantity, property?.currency)} / night</span>
                     </div>
                   ))}
                 </div>
@@ -391,7 +392,7 @@ export default function EmbedWidget() {
                   <div className="text-right">
                     <span className="text-muted-foreground block">Total Price</span>
                     <span className="font-bold text-primary text-xl">
-                      ${cart.reduce((sum, item) => sum + (item.room.price * item.quantity), 0) * Math.ceil((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / (1000 * 3600 * 24))}
+                      {formatCurrency(cart.reduce((sum, item) => sum + (item.room.price * item.quantity), 0) * Math.ceil((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / (1000 * 3600 * 24)), property?.currency)}
                     </span>
                   </div>
                 </div>
@@ -468,7 +469,7 @@ export default function EmbedWidget() {
                 <div className="border-t pt-6 space-y-4">
                   <div className="flex justify-between text-lg font-medium">
                     <span>Total Amount</span>
-                    <span>${cart.reduce((sum, item) => sum + (item.room.price * item.quantity), 0) * Math.ceil((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / (1000 * 3600 * 24))}</span>
+                    <span>{formatCurrency(cart.reduce((sum, item) => sum + (item.room.price * item.quantity), 0) * Math.ceil((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / (1000 * 3600 * 24)), property?.currency)}</span>
                   </div>
                   <Button size="lg" className="w-full h-14 text-lg" disabled={isBooking} onClick={onPaymentSubmit}>
                     {isBooking ? 'Processing...' : 'Place Booking'}

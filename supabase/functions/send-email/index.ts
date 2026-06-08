@@ -46,13 +46,14 @@ Deno.serve(async (req) => {
     // Fetch the Property details
     const { data: property } = await supabase
       .from('properties')
-      .select('name, email, phone, address')
+      .select('name, email, phone, address, currency')
       .eq('id', property_id)
       .single();
 
     const hotelName = property?.name || "Our Hotel";
     const hotelEmail = property?.email || "contact@ourhotel.com";
     const hotelPhone = property?.phone || "";
+    const hotelCurrency = property?.currency || "USD";
 
     // Fetch all bookings in this group to calculate total and list rooms
     let groupBookings = [record];
@@ -75,15 +76,20 @@ Deno.serve(async (req) => {
     }
 
     const nights = Math.max(1, Math.ceil((new Date(check_out).getTime() - new Date(check_in).getTime()) / (1000 * 3600 * 24)));
-    let totalAmount = 0;
+    let rawTotalAmount = 0;
     let roomsListHtml = "";
 
     groupBookings.forEach((b: any) => {
       const roomTitle = b.room_units?.room_types?.title || 'Room';
       const roomPrice = b.room_units?.room_types?.price || 0;
-      totalAmount += roomPrice * nights;
+      rawTotalAmount += roomPrice * nights;
       roomsListHtml += `<p style="margin: 4px 0; color: #4b5563;">• ${roomTitle}</p>`;
     });
+
+    const totalAmountStr = new Intl.NumberFormat('en-US', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    }).format(rawTotalAmount) + ' ' + hotelCurrency;
 
     // Generate WhatsApp link if phone exists (strips non-numeric characters)
     let whatsappButton = "";
@@ -146,7 +152,7 @@ Deno.serve(async (req) => {
           <div style="margin: 16px 0 8px 0; color: #4b5563;"><strong>Rooms Booked:</strong></div>
           ${roomsListHtml}
           <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #e5e7eb;">
-            <p style="margin: 0; color: #111827; font-size: 18px;"><strong>Total Amount: $${totalAmount}</strong></p>
+            <p style="margin: 0; color: #111827; font-size: 18px;"><strong>Total Amount: ${totalAmountStr}</strong></p>
             <p style="margin: 4px 0 0 0; color: #6b7280; font-size: 14px;">(To be paid on arrival)</p>
           </div>
         </div>
@@ -196,7 +202,7 @@ Deno.serve(async (req) => {
 
         const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${twilioAccountSid}/Messages.json`;
         
-        const messageBody = `🚨 *New Booking Alert!*\n\n${guest_name} has requested a reservation at ${hotelName}.\n\n📅 Dates: ${new Date(check_in).toLocaleDateString()} to ${new Date(check_out).toLocaleDateString()}\n🛏️ Rooms:\n${roomsListHtml.replace(/<[^>]*>?/gm, '').trim()}\n💰 Total: $${totalAmount}\n\nLog in to confirm: https://brandspire-booking.vercel.app/admin/bookings`;
+        const messageBody = `🚨 *New Booking Alert!*\n\n${guest_name} has requested a reservation at ${hotelName}.\n\n📅 Dates: ${new Date(check_in).toLocaleDateString()} to ${new Date(check_out).toLocaleDateString()}\n🛏️ Rooms:\n${roomsListHtml.replace(/<[^>]*>?/gm, '').trim()}\n💰 Total: ${totalAmountStr}\n\nLog in to confirm: https://brandspire-booking.vercel.app/admin/bookings`;
 
         const twilioBody = new URLSearchParams({
           From: `whatsapp:${twilioNumber.replace('whatsapp:', '')}`, // Ensure format is whatsapp:+...

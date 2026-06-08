@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useProperty, useAllBookings, useUpdateBookingStatus } from '@/hooks/useSupabase';
 import { format } from 'date-fns';
 import { Mail, Phone, MoreVertical, XCircle, CheckCircle2, AlertCircle } from 'lucide-react';
+import { formatCurrency } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -159,7 +160,7 @@ export default function Bookings() {
                   </div>
                 </TableCell>
                 <TableCell className="font-medium">
-                  ${booking.total_amount}
+                  {formatCurrency(booking.total_amount, property?.currency)}
                 </TableCell>
                 <TableCell>
                   {getStatusBadge(booking.booking_status)}

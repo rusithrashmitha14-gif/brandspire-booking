@@ -17,10 +17,21 @@ const navItems = [
 export default function AdminLayout() {
   const location = useLocation();
   const { mutate: ensureProperty } = useEnsureProperty();
+  const [userEmail, setUserEmail] = React.useState<string | null>(null);
 
   useEffect(() => {
     ensureProperty();
+    import('@/lib/supabase').then(({ supabase }) => {
+      supabase.auth.getUser().then(({ data }) => {
+        if (data?.user?.email) {
+          setUserEmail(data.user.email);
+        }
+      });
+    });
   }, [ensureProperty]);
+
+  const initials = userEmail ? userEmail.substring(0, 2).toUpperCase() : 'A';
+  const displayEmail = userEmail || 'Admin';
 
   return (
     <div className="flex h-screen bg-background">
@@ -56,12 +67,12 @@ export default function AdminLayout() {
         </nav>
         <div className="p-4 border-t">
           <div className="flex items-center justify-between px-3 py-2">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-sm font-medium">
-                JD
+            <div className="flex items-center gap-3 overflow-hidden">
+              <div className="w-8 h-8 shrink-0 rounded-full bg-muted flex items-center justify-center text-sm font-medium">
+                {initials}
               </div>
-              <div className="flex flex-col">
-                <span className="text-sm font-medium leading-none">Admin</span>
+              <div className="flex flex-col min-w-0">
+                <span className="text-sm font-medium leading-none truncate" title={displayEmail}>{displayEmail}</span>
               </div>
             </div>
             <button 
@@ -72,7 +83,7 @@ export default function AdminLayout() {
                   });
                 });
               }}
-              className="text-xs text-muted-foreground hover:text-destructive transition-colors"
+              className="text-xs text-muted-foreground hover:text-destructive transition-colors shrink-0 ml-2"
               title="Log out"
             >
               <LogOut className="w-4 h-4" />
