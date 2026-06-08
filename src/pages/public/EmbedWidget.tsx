@@ -90,6 +90,20 @@ export default function EmbedWidget() {
     },
   });
 
+  // Auto-resize iframe logic
+  React.useEffect(() => {
+    const observer = new ResizeObserver(() => {
+      // Send the current scrollHeight of the body to the parent window
+      window.parent.postMessage({ 
+        type: 'resize-brandspire-widget', 
+        height: document.documentElement.scrollHeight + 50 
+      }, '*');
+    });
+
+    observer.observe(document.body);
+    return () => observer.disconnect();
+  }, []);
+
   const handleSearch = () => {
     if (new Date(checkOut) <= new Date(checkIn)) {
       alert("Check-out date must be after check-in date.");
