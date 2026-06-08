@@ -314,6 +314,14 @@ export default function EmbedWidget() {
             </div>
           )}
 
+          {/* Custom Backdrop since modal={false} disables the default one */}
+          {viewingRoom && (
+            <div 
+              className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm transition-opacity animate-in fade-in-0" 
+              onClick={() => setViewingRoom(null)} 
+            />
+          )}
+
           {/* Room Details Dialog */}
           <Dialog modal={false} open={!!viewingRoom} onOpenChange={(open) => !open && setViewingRoom(null)}>
             <DialogContent className="max-w-3xl p-0 overflow-hidden bg-background">
