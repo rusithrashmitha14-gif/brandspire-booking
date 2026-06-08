@@ -96,7 +96,7 @@ export default function EmbedWidget() {
       // Send the current scrollHeight of the body to the parent window
       window.parent.postMessage({ 
         type: 'resize-brandspire-widget', 
-        height: document.documentElement.scrollHeight + 50 
+        height: document.documentElement.scrollHeight 
       }, '*');
     });
 
@@ -161,11 +161,11 @@ export default function EmbedWidget() {
     }
   };
 
-  if (isPropertyLoading) return <div className="min-h-screen p-8 text-center">Loading...</div>;
-  if (!property) return <div className="min-h-screen p-8 text-center text-destructive">Property not found.</div>;
+  if (isPropertyLoading) return <div className="py-8 text-center">Loading...</div>;
+  if (!property) return <div className="py-8 text-center text-destructive">Property not found.</div>;
 
   return (
-    <div className="min-h-screen bg-transparent p-4 flex flex-col items-center font-sans">
+    <div className="bg-transparent p-4 flex flex-col items-center font-sans">
       <Card className="w-full max-w-4xl border-none shadow-xl bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 overflow-hidden">
         <div className="h-2 w-full bg-primary" />
         <CardContent className="p-6 md:p-8">
