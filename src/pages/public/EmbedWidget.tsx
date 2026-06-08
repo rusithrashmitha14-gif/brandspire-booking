@@ -170,15 +170,15 @@ export default function EmbedWidget() {
               <div className="space-y-1.5 md:col-span-1">
                 <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider ml-1">Check In</Label>
                 <div className="relative">
-                  <CalendarIcon className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input type="date" value={checkIn} onChange={e => setCheckIn(e.target.value)} className="pl-9 bg-background h-11" />
+                  <CalendarIcon className="hidden md:block absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input type="date" value={checkIn} onChange={e => setCheckIn(e.target.value)} className="pl-3 md:pl-9 bg-background h-11" />
                 </div>
               </div>
               <div className="space-y-1.5 md:col-span-1">
                 <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider ml-1">Check Out</Label>
                 <div className="relative">
-                  <CalendarIcon className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input type="date" value={checkOut} onChange={e => setCheckOut(e.target.value)} className="pl-9 bg-background h-11" />
+                  <CalendarIcon className="hidden md:block absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input type="date" value={checkOut} onChange={e => setCheckOut(e.target.value)} className="pl-3 md:pl-9 bg-background h-11" />
                 </div>
               </div>
               <div className="space-y-1.5 md:col-span-1">
