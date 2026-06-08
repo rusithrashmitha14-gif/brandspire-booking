@@ -104,8 +104,15 @@ export default function EmbedWidget() {
     return () => observer.disconnect();
   }, []);
 
+  const isFirstRender = React.useRef(true);
+
   // Scroll to top of widget when step changes
   React.useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+
     // 1. Send message to parent website for perfectly smooth mobile scrolling
     window.parent.postMessage({ type: 'scroll-to-top-brandspire-widget' }, '*');
     
