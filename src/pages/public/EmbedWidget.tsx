@@ -66,7 +66,7 @@ export default function EmbedWidget() {
   
   const [checkIn, setCheckIn] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
   const [checkOut, setCheckOut] = useState<string>(format(addDays(new Date(), 1), 'yyyy-MM-dd'));
-  const [guests, setGuests] = useState<number>(2);
+  const [guests, setGuests] = useState<number | string>(2);
   const [cart, setCart] = useState<{ room: any; quantity: number; guests_per_room: number }[]>([]);
   const [viewingRoom, setViewingRoom] = useState<any>(null);
   const [activeImage, setActiveImage] = useState<string>('');
@@ -75,7 +75,7 @@ export default function EmbedWidget() {
     property?.id as string, 
     checkIn, 
     checkOut, 
-    guests, 
+    guests === '' ? 1 : (guests as number), 
     step === 'results'
   );
 
@@ -127,6 +127,9 @@ export default function EmbedWidget() {
       alert("Check-out date must be after check-in date.");
       return;
     }
+    if (guests === '' || guests < 1) {
+      setGuests(1);
+    }
     setStep('results');
   };
 
@@ -137,7 +140,7 @@ export default function EmbedWidget() {
         if (existing.quantity >= room.available_units) return prev;
         return prev.map(item => item.room.room_type_id === room.room_type_id ? { ...item, quantity: item.quantity + 1 } : item);
       }
-      return [...prev, { room, quantity: 1, guests_per_room: guests }];
+      return [...prev, { room, quantity: 1, guests_per_room: guests === '' ? 1 : (guests as number) }];
     });
   };
 
@@ -217,7 +220,7 @@ export default function EmbedWidget() {
                 <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider ml-1">Guests</Label>
                 <div className="relative">
                   <Users className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input type="number" min="1" value={guests} onFocus={e => e.target.select()} onChange={e => setGuests(parseInt(e.target.value) || 1)} className="pl-9 bg-background h-11" />
+                  <Input type="number" min="1" value={guests} onFocus={e => e.target.select()} onChange={e => setGuests(e.target.value === '' ? '' : Math.max(1, parseInt(e.target.value) || 1))} className="pl-9 bg-background h-11" />
                 </div>
               </div>
               <div className="md:col-span-1 flex items-end">
