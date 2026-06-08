@@ -106,9 +106,12 @@ export default function EmbedWidget() {
 
   // Scroll to top of widget when step changes
   React.useEffect(() => {
-    // We use setTimeout to allow the DOM to render the new step before scrolling
+    // 1. Send message to parent website for perfectly smooth mobile scrolling
+    window.parent.postMessage({ type: 'scroll-to-top-brandspire-widget' }, '*');
+    
+    // 2. Fallback for desktop/direct links
     setTimeout(() => {
-      document.getElementById('widget-top')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      document.getElementById('widget-top')?.scrollIntoView();
     }, 100);
   }, [step]);
 

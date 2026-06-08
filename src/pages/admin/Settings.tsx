@@ -215,6 +215,13 @@ export default function Settings() {
     if (e.data && e.data.type === "resize-brandspire-widget") {
       document.getElementById("brandspire-booking").style.height = e.data.height + "px";
     }
+    if (e.data && e.data.type === "scroll-to-top-brandspire-widget") {
+      var el = document.getElementById("brandspire-booking");
+      if (el) {
+        var y = el.getBoundingClientRect().top + window.scrollY - 50;
+        window.scrollTo({top: y, behavior: 'smooth'});
+      }
+    }
   });
 </script>`}
             </pre>
@@ -223,7 +230,7 @@ export default function Settings() {
               size="sm" 
               className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
               onClick={() => {
-                const code = `<iframe id="brandspire-booking" src="${window.location.origin}/embed/${property?.slug || property?.id}" width="100%" style="border:none; min-height: 800px; overflow:hidden;" scrolling="no"></iframe>\n<script>\n  window.addEventListener("message", function(e) {\n    if (e.data && e.data.type === "resize-brandspire-widget") {\n      document.getElementById("brandspire-booking").style.height = e.data.height + "px";\n    }\n  });\n</script>`;
+                const code = `<iframe id="brandspire-booking" src="${window.location.origin}/embed/${property?.slug || property?.id}" width="100%" style="border:none; min-height: 800px; overflow:hidden;" scrolling="no"></iframe>\n<script>\n  window.addEventListener("message", function(e) {\n    if (e.data && e.data.type === "resize-brandspire-widget") {\n      document.getElementById("brandspire-booking").style.height = e.data.height + "px";\n    }\n    if (e.data && e.data.type === "scroll-to-top-brandspire-widget") {\n      var el = document.getElementById("brandspire-booking");\n      if (el) {\n        var y = el.getBoundingClientRect().top + window.scrollY - 50;\n        window.scrollTo({top: y, behavior: 'smooth'});\n      }\n    }\n  });\n</script>`;
                 navigator.clipboard.writeText(code);
                 alert("Copied to clipboard!");
               }}
