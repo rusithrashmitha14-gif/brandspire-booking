@@ -3,13 +3,30 @@ import { useDropzone } from 'react-dropzone';
 import { UploadCloud, Image as ImageIcon, Trash2, Copy, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { useGalleryImages, useUploadImage, getImageUrl, useProperty } from '@/hooks/useSupabase';
+import { useGalleryImages, useUploadImage, useDeleteImage, getImageUrl, useProperty } from '@/hooks/useSupabase';
 
 export default function Gallery() {
   const { data: property } = useProperty();
   const { data: images = [], isLoading } = useGalleryImages(property?.id);
   const { mutateAsync: uploadImage, isPending: isUploading } = useUploadImage();
+  const { mutateAsync: deleteImage } = useDeleteImage();
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const handleDelete = async (path: string) => {
+    if (!property?.id) return;
+    if (window.confirm("Are you sure you want to delete this image?")) {
+      setDeletingId(path);
+      try {
+        await deleteImage({ path, propertyId: property.id });
+      } catch (err) {
+        console.error("Failed to delete image:", err);
+        alert(`Failed to delete image.`);
+      } finally {
+        setDeletingId(null);
+      }
+    }
+  };
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     if (!property?.id) return;
@@ -100,8 +117,21 @@ export default function Gallery() {
                       className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                       loading="lazy"
                     />
-                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-between p-3">
-                      <div className="flex justify-end">
+                    <div className={`absolute inset-0 bg-black/50 transition-opacity flex flex-col justify-between p-3 ${deletingId === file.name ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                      <div className="flex justify-between items-start">
+                        <Button
+                          variant="destructive"
+                          size="icon"
+                          className="h-8 w-8 bg-destructive/80 hover:bg-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(file.name);
+                          }}
+                          disabled={deletingId === file.name}
+                          title="Delete Image"
+                        >
+                          <Trash2 className={`w-4 h-4 ${deletingId === file.name ? 'animate-pulse' : ''}`} />
+                        </Button>
                         <Button 
                           variant="secondary" 
                           size="icon" 

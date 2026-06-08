@@ -538,6 +538,24 @@ export function useUploadImage() {
   });
 }
 
+// Delete image hook
+export function useDeleteImage() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ path, propertyId }: { path: string, propertyId: string }) => {
+      const { error } = await supabase.storage
+        .from('property_images')
+        .remove([path]);
+      
+      if (error) throw error;
+      return path;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['gallery_images', variables.propertyId] });
+    }
+  });
+}
+
 // Fetch all bookings for the property (for admin management)
 export function useAllBookings(propertyId?: string) {
   return useQuery({
