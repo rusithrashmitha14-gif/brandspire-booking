@@ -217,7 +217,7 @@ export default function EmbedWidget() {
                 <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider ml-1">Guests</Label>
                 <div className="relative">
                   <Users className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input type="number" min="1" value={guests} onChange={e => setGuests(parseInt(e.target.value) || 1)} className="pl-9 bg-background h-11" />
+                  <Input type="number" min="1" value={guests} onFocus={e => e.target.select()} onChange={e => setGuests(parseInt(e.target.value) || 1)} className="pl-9 bg-background h-11" />
                 </div>
               </div>
               <div className="md:col-span-1 flex items-end">
