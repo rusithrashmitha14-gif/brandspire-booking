@@ -237,23 +237,23 @@ export default function EmbedWidget() {
                           <h4 className="text-xl font-semibold mb-2">{room.title} {room.is_entire_property && <span className="text-xs ml-2 bg-primary/10 text-primary px-2 py-1 rounded-full uppercase tracking-wider">Entire Villa</span>}</h4>
                           <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{room.description || "A beautiful room ready for your stay."}</p>
                         </div>
-                        <div className="flex justify-between items-end mt-4 pt-4 border-t">
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end mt-4 pt-4 border-t gap-4 sm:gap-0">
                           <div>
                             <p className="text-xs text-muted-foreground uppercase tracking-wide font-semibold mb-1">Nightly Rate</p>
                             <p className="text-2xl font-bold text-primary">{formatCurrency(room.price, property?.currency)}</p>
                           </div>
-                          <div className="flex items-center gap-3">
-                            <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); setViewingRoom(room); setActiveImage(room.featured_image || ''); }}>
+                          <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto justify-stretch">
+                            <Button className="flex-1 sm:flex-none" size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); setViewingRoom(room); setActiveImage(room.featured_image || ''); }}>
                               View Details
                             </Button>
                             {cartItem ? (
-                              <div className="flex items-center border rounded-md" onClick={e => e.stopPropagation()}>
-                                <Button size="icon" variant="ghost" className="h-10 w-10" onClick={() => handleRemoveFromCart(room)}>-</Button>
+                              <div className="flex items-center justify-between border rounded-md flex-1 sm:flex-none" onClick={e => e.stopPropagation()}>
+                                <Button size="icon" variant="ghost" className="h-10 w-10 sm:w-8" onClick={() => handleRemoveFromCart(room)}>-</Button>
                                 <span className="w-8 text-center font-semibold">{cartItem.quantity}</span>
-                                <Button size="icon" variant="ghost" className="h-10 w-10" onClick={() => handleAddToCart(room)} disabled={isMaxReached}>+</Button>
+                                <Button size="icon" variant="ghost" className="h-10 w-10 sm:w-8" onClick={() => handleAddToCart(room)} disabled={isMaxReached}>+</Button>
                               </div>
                             ) : (
-                              <Button size="lg" className="px-6" disabled={isConflicting} onClick={(e) => { e.stopPropagation(); handleAddToCart(room); }}>
+                              <Button size="lg" className="px-6 flex-1 sm:flex-none" disabled={isConflicting} onClick={(e) => { e.stopPropagation(); handleAddToCart(room); }}>
                                 {isConflicting ? 'Unavailable' : 'Select Room'}
                               </Button>
                             )}
@@ -266,12 +266,12 @@ export default function EmbedWidget() {
               )}
 
               {cart.length > 0 && (
-                <div className="sticky bottom-4 mt-8 p-4 bg-primary text-primary-foreground rounded-xl shadow-2xl flex justify-between items-center z-10 animate-in slide-in-from-bottom-5">
-                  <div>
+                <div className="sticky bottom-4 mt-8 p-4 bg-primary text-primary-foreground rounded-xl shadow-2xl flex flex-col sm:flex-row justify-between items-center z-10 animate-in slide-in-from-bottom-5 gap-4 sm:gap-0">
+                  <div className="text-center sm:text-left w-full sm:w-auto">
                     <p className="font-semibold text-lg">{cart.reduce((sum, item) => sum + item.quantity, 0)} Room(s) Selected</p>
                     <p className="text-primary-foreground/80 text-sm">Total: {formatCurrency(cart.reduce((sum, item) => sum + (item.room.price * item.quantity), 0), property?.currency)} / night</p>
                   </div>
-                  <Button size="lg" variant="secondary" className="px-8 font-bold" onClick={() => setStep('checkout')}>
+                  <Button size="lg" variant="secondary" className="px-8 font-bold w-full sm:w-auto" onClick={() => setStep('checkout')}>
                     Proceed to Checkout
                   </Button>
                 </div>
@@ -344,12 +344,12 @@ export default function EmbedWidget() {
                       )}
                     </div>
                     
-                    <div className="pt-6 border-t mt-6 flex justify-between items-center">
-                      <div>
+                    <div className="pt-6 border-t mt-6 flex flex-col sm:flex-row justify-between items-center gap-4 sm:gap-0">
+                      <div className="text-center sm:text-left">
                         <p className="text-xs text-muted-foreground uppercase font-semibold">Nightly Rate</p>
                         <p className="text-2xl font-bold text-primary">{formatCurrency(viewingRoom.price, property?.currency)}</p>
                       </div>
-                      <Button size="lg" className="px-8 shadow-md hover:shadow-lg transition-all" onClick={() => {
+                      <Button size="lg" className="w-full sm:w-auto px-8 shadow-md hover:shadow-lg transition-all" onClick={() => {
                         setViewingRoom(null);
                         handleAddToCart(viewingRoom);
                       }}>
