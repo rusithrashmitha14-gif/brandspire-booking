@@ -315,7 +315,7 @@ export default function EmbedWidget() {
           )}
 
           {/* Room Details Dialog */}
-          <Dialog open={!!viewingRoom} onOpenChange={(open) => !open && setViewingRoom(null)}>
+          <Dialog modal={false} open={!!viewingRoom} onOpenChange={(open) => !open && setViewingRoom(null)}>
             <DialogContent className="max-w-3xl p-0 overflow-hidden bg-background">
               {viewingRoom && (
                 <div className="flex flex-col md:flex-row h-full max-h-[85vh]">
